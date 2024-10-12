@@ -31,11 +31,37 @@
     #imagePreview img {
       border: 1px solid #ccc;
     }
+	body, html {
+		height: 100%;
+		margin: 0;
+	  }
+	  
+ 
+	  .container {
+		padding-top: 20px;
+		min-height: 85vh;
+		display: flex;
+		flex-direction: column;
+	  }
+	  
+	  .content {
+		flex-grow: 1; /* Задаем flex-grow: 1 для контента, чтобы он занимал оставшееся пространство */
+	  }
+	  
+	  footer {
+		/* Стиль футера */
+		background-color: #f0f0f0;
+		padding: 20px 0;
+		text-align: center;
+	  }
+	  
+	  
+	  
   </style>
 </head>
 
 <body>
-  <div class="container"> {% block content %} Контент не подвезли :( {% endblock %} </div> {% include 'includes/footer.html' %}
+  <div class="container"> <div class="content"> {% block content %} Контент не подвезли :( {% endblock %} </div> </div> {% include 'includes/footer.html' %}
   <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 </body>
 

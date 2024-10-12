@@ -1,5 +1,6 @@
 from pathlib import Path
 from dotenv import load_dotenv
+from ultralytics import YOLO
 import os
 
 load_dotenv()
@@ -93,3 +94,8 @@ STATICFILES_DIRS = [BASE_DIR / "src"]
 
 STATIC_SRC = BASE_DIR / "src"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# MODEL
+
+MODEL = YOLO(os.path.join(BASE_DIR, "model/best.pt"))
