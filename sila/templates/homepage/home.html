@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %} Главная {% endblock %}
+{% block content%}
+
+<div class="row mt-5">
+  <div class="col-md-12 text-center">
+    <h1>Добро пожаловать!</h1>
+    <p class="lead">Загрузите изображения ноутбуков, и наша нейронная сеть определит класс дефекта (скол, царапина и т.д.).</p>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-6 offset-md-3">
+    <form action="/upload/" method="post" enctype="multipart/form-data" class="mt-3">
+        {% csrf_token %}
+        <input type="file" name="image" accept="image/*" required>
+        <button type="submit" class="btn btn-primary mt-2">Загрузить фото</button>
+      </form>
+  </div>
+</div>
+
+{% endblock %}

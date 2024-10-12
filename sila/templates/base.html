@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+	<title>{% block title %}{% endblock %}</title> {% load static %}
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'bootstrap/css/styles.css' %}" rel="stylesheet"> </head>
+
+<body>
+	<div class="container"> {% block content %} Контент не подвезли :( {% endblock %} </div> {% include 'includes/footer.html' %}
+	<script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+
+</html>
