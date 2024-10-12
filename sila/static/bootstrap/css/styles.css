@@ -31,3 +31,22 @@ h1 {
 #imagePreview img {
   border: 1px solid #ccc;
 }
+#image-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; 
+  gap: 10px; /* Пробелы между изображениями */
+}
+
+.gallery-image {
+  width: 100px; 
+  height: auto;  
+  cursor: pointer;
+  /* Добавим максимальную ширину для изображений */
+  max-width: 150px; 
+}
+ 
+ .gallery-image.selected {
+  border: 2px solid blue; /* Подчеркивание выбранного изображения */
+ }
+ 

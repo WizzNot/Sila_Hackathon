@@ -14,11 +14,13 @@
   <div class="col-md-12">
     <div class="row">
       <div class="col-md-4">
-        <select id="image-select">
+        <div id="image-gallery">
           {% for image in images %}
-            <option value="{% static 'predicted_images/' %}{{ image }}">{{ image }}</option>
+            <img src="{% static 'predicted_images/' %}{{ image }}" 
+                 data-image-path="{% static 'predicted_images/' %}{{ image }}" 
+                 class="gallery-image" alt="{{ image }}">
           {% endfor %}
-        </select>
+        </div>
       </div>
       <div class="col-md-8" id="image-container">
         <canvas id="image-canvas"></canvas>
@@ -46,144 +48,159 @@
 
 <script>
   var csrftoken = '{{ csrf_token }}';
-  const imageSelect = document.getElementById('image-select');
+  const imageGallery = document.getElementById('image-gallery');
   const imageContainer = document.getElementById('image-container');
   const imageCanvas = document.getElementById('image-canvas');
   const ctx = imageCanvas.getContext('2d');
   const submitButton = document.getElementById('submit-coordinates');
   const damageClassSelect = document.getElementById('damage-class');
-
+  
   let selectedImage = null;
   let selectedImageWidth = 0;
   let selectedImageHeight = 0;
   let point1 = null;
   let point2 = null;
-
-  const handleImageChange = () => {
+  
+  // Обработка клика по изображению в галерее
+  imageGallery.addEventListener('click', (event) => {
+   if (event.target.tagName === 'IMG') {
+    const previousImage = document.querySelector('.gallery-image.selected');
+    if (previousImage) {
+     previousImage.classList.remove('selected');
+    }
+  
+    event.target.classList.add('selected');
+  
     selectedImage = new Image();
-    selectedImage.src = imageSelect.value;
-
+    selectedImage.src = event.target.dataset.imagePath;
+  
     selectedImage.onload = () => {
-      // Очистка canvas
-      ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-
-      // Установка размера canvas под размер изображения
-      imageCanvas.width = selectedImage.width * 2; // Увеличение в 2 раза
-      imageCanvas.height = selectedImage.height * 2; // Увеличение в 2 раза
-
-      // Рисование изображения на canvas
-      ctx.drawImage(selectedImage, 0, 0, imageCanvas.width, imageCanvas.height);
-
-      // Обновление размеров изображения
-      selectedImageWidth = selectedImage.width;
-      selectedImageHeight = selectedImage.height;
+     ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+  
+     // Ограничение размера изображения на canvas
+     const maxWidth = imageContainer.offsetWidth; // Получаем ширину контейнера
+     const maxHeight = 500; // Установите максимальную высоту
+  
+     let newWidth = selectedImage.width;
+     let newHeight = selectedImage.height;
+     if (newWidth > maxWidth || newHeight > maxHeight) {
+      if (newWidth / maxWidth > newHeight / maxHeight) {
+       newHeight = maxWidth * (newHeight / newWidth);
+       newWidth = maxWidth;
+      } else {
+       newWidth = maxHeight * (newWidth / newHeight);
+       newHeight = maxHeight;
+      }
+     }
+  
+     imageCanvas.width = newWidth;
+     imageCanvas.height = newHeight;
+  
+     // Выравнивание изображения по центру
+     ctx.drawImage(
+      selectedImage,
+      (imageCanvas.width - newWidth) / 2, // Вычисляем смещение по горизонтали
+      (imageCanvas.height - newHeight) / 2, // Вычисляем смещение по вертикали
+      newWidth,
+      newHeight
+     );
+  
+     selectedImageWidth = newWidth;
+     selectedImageHeight = newHeight;
     }
-  };
-
-  const handleCanvasClick = (event) => {
-    const rect = imageCanvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const imageX = x / (imageCanvas.width / selectedImageWidth);
-    const imageY = y / (imageCanvas.height / selectedImageHeight);
-
-    // Сохранение изображения
-    ctx.save();
-
-    if (point1 === null) {
-      point1 = { x: imageX, y: imageY };
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
-      ctx.fillStyle = 'red';
-      ctx.fill();
-    } else if (point2 === null) {
-      point2 = { x: imageX, y: imageY };
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
-      ctx.fillStyle = 'blue';
-      ctx.fill();
-
-      // Рисование прямоугольника
-      const minX = Math.min(point1.x, point2.x);
-      const minY = Math.min(point1.y, point2.y);
-      const width = Math.abs(point1.x - point2.x);
-      const height = Math.abs(point1.y - point2.y);
-      ctx.strokeStyle = 'green';
-      ctx.strokeRect(
-        minX * (imageCanvas.width / selectedImageWidth),
-        minY * (imageCanvas.height / selectedImageHeight),
-        width * (imageCanvas.width / selectedImageWidth),
-        height * (imageCanvas.height / selectedImageHeight)
-      );
-    } else {
-      ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-      imageCanvas.width = selectedImage.width * 2; // Увеличение в 2 раза
-      imageCanvas.height = selectedImage.height * 2; // Увеличение в 2 раза
-      point1 = null;
-      point2 = null;
-      point1 = { x: imageX, y: imageY };
-      ctx.drawImage(selectedImage, 0, 0, imageCanvas.width, imageCanvas.height);
-
-      // Обновление размеров изображения
-      selectedImageWidth = selectedImage.width;
-      selectedImageHeight = selectedImage.height;
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
-      ctx.fillStyle = 'red';
-      ctx.fill();
-
-      // Рисование изображения на canvas
-    }
-
-    // Восстановление изображения
-    ctx.restore();
-  };
-
-  const handleSubmitCoordinates = () => {
-    if (point1 && point2) {
-      // Получение текущего изображения
-      const currentImage = imageSelect.value;
-
-      // Получение выбранного класса повреждения
-      const damageClass = damageClassSelect.value;
-
-      // Отправка данных на сервер
-      fetch('/process_coordinates/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrftoken,
-        },
-        body: JSON.stringify({
-          image: currentImage,
-          point1: point1,
-          point2: point2,
-          damage_class: damageClass, // Добавлен параметр damage_class
-        }),
-      })
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        } else {
-          throw new Error('Ошибка при отправке координат.');
-        }
-      })
-      .then(data => {
-        // Обработка ответа от сервера
-        console.log('Ответ от сервера:', data);
-      })
-      .catch(error => {
-        console.error('Ошибка:', error);
-      });
-    } else {
-      alert('Пожалуйста, поставьте две точки на изображении.');
-    }
-  };
-
-  imageSelect.addEventListener('change', handleImageChange);
-  imageCanvas.addEventListener('click', handleCanvasClick);
-  submitButton.addEventListener('click', handleSubmitCoordinates);
+   }
+  });
+  
+  // Обработка клика на canvas для рисования точек
+  imageCanvas.addEventListener('click', (event) => {
+   const rect = imageCanvas.getBoundingClientRect();
+   const x = event.clientX - rect.left;
+   const y = event.clientY - rect.top;
+  
+   const imageX = x / (imageCanvas.width / selectedImageWidth);
+   const imageY = y / (imageCanvas.height / selectedImageHeight);
+  
+   ctx.save();
+   if (point1 === null) {
+    point1 = { x: imageX, y: imageY };
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+   } else if (point2 === null) {
+    point2 = { x: imageX, y: imageY };
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'blue';
+    ctx.fill();
+  
+    const minX = Math.min(point1.x, point2.x);
+    const minY = Math.min(point1.y, point2.y);
+    const width = Math.abs(point1.x - point2.x);
+    const height = Math.abs(point1.y - point2.y);
+    ctx.strokeStyle = 'green';
+    ctx.strokeRect(
+     minX * (imageCanvas.width / selectedImageWidth),
+     minY * (imageCanvas.height / selectedImageHeight),
+     width * (imageCanvas.width / selectedImageWidth),
+     height * (imageCanvas.height / selectedImageHeight)
+    );
+   } else {
+    ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+    imageCanvas.width = selectedImage.width;
+    imageCanvas.height = selectedImage.height;
+    point1 = null;
+    point2 = null;
+    point1 = { x: imageX, y: imageY };
+    ctx.drawImage(selectedImage, 0, 0, imageCanvas.width, imageCanvas.height);
+    selectedImageWidth = selectedImage.width;
+    selectedImageHeight = selectedImage.height;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+   }
+  
+   ctx.restore();
+  });
+  
+  // Обработка клика на кнопку "Отправить координаты"
+  submitButton.addEventListener('click', () => {
+   if (point1 && point2) {
+    const currentImage = selectedImage.src;
+    const damageClass = damageClassSelect.value;
+  
+    fetch('/process_coordinates/', {
+     method: 'POST',
+     headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrftoken,
+     },
+     body: JSON.stringify({
+      image: currentImage,
+      point1: point1,
+      point2: point2,
+      damage_class: damageClass,
+     }),
+    })
+    .then(response => {
+     if (response.ok) {
+      return response.json();
+     } else {
+      throw new Error('Ошибка при отправке координат.');
+     }
+    })
+    .then(data => {
+     console.log('Ответ от сервера:', data);
+    })
+    .catch(error => {
+     console.error('Ошибка:', error);
+    });
+   } else {
+    alert('Пожалуйста, поставьте две точки на изображении.');
+   }
+  });
+    
 </script>
 
 {% endblock %}
