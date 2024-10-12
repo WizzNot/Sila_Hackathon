@@ -1,4 +1,7 @@
 from django.shortcuts import render
+from django.conf import settings
+
+model = settings.MODEL
 
 
 def homepage(request):
