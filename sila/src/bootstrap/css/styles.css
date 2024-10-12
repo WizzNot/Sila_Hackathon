@@ -1,10 +1,23 @@
 body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-  
-  .container {
-    flex: 1;
-  }
-  
+  font-family: 'Arial', sans-serif; /* Выберите шрифт по вкусу */
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.container {
+  padding-top: 20px;
+}
+
+h1 {
+  font-size: 3em;
+  color: #28a745; /*  Зеленый цвет */
+}
+
+.lead {
+  font-size: 1.2em;
+  color: #555;
+}
+
+#imagePreview img {
+  border: 1px solid #ccc;
+}
