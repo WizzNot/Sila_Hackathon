@@ -1,11 +1,16 @@
 from django.shortcuts import render
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+import pandas as pd
+import json
 from PIL import Image
 import uuid
 import os
 
 model = settings.MODEL
+
+d = {'царапины': 0, 'битые пиксели': 1, 'проблемы с клавишами': 2, 'замок': 3, 
+     'отсутствует шуруп': 4, 'сколы': 5, 'специфический': 6}
 
 
 def delete_image(filename):
@@ -42,3 +47,28 @@ def upload(request):
             predicted_images.append(name)
         return render(request, 'homepage/upload_success.html', {"images": predicted_images})
     return render(request, 'homepage/upload_fail.html')
+
+
+def process_coordinates(request):
+  if request.method == 'POST':
+    data = json.loads(request.body)
+    image = data.get('image')
+    point1 = data.get('point1')
+    point2 = data.get('point2')
+    damageclass = data.get('damage_class')
+    filename = data.get('image')
+    filename = filename.split("/")[-1]
+    x1, y1, x2, y2 = int(point1['x']), int(point1['y']), int(point2['x']), int(point2['y'])
+    dx, dy = int(min(x1, x2)), int(max(y1, y2))
+    width = int(abs(max(x1, x2) - dx))
+    length = int(abs(dy - min(y2, y1)))
+    df = pd.DataFrame(columns=['main_class','filename','x_left_bottom','y_left_bottom','length','width'])
+    df.loc[len(df)] = [d[damageclass.lower()],filename,dx,dy,length,width]
+    old_df = pd.read_csv(os.path.join(settings.BASE_DIR, "src", "data.csv"))
+    combined = pd.concat([old_df, df], ignore_index=True)
+    combined.to_csv(os.path.join(settings.BASE_DIR, "src", "data.csv"), index=False)
+    
+
+    return render(request, 'base.html', {'images': []}) # Возвращаем шаблон (или другой ответ)
+  else:
+    return render(request, 'base.html', {'images': []}) # Возвращаем шаблон (или другой ответ)

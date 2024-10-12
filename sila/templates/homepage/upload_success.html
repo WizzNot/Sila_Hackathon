@@ -2,6 +2,7 @@
 {% block title %} Обработка {% endblock %}
 {% block content%}
 {% load static %}
+{% csrf_token %}
 
 <div class="row mt-5">
   <div class="col-md-12 text-center">
@@ -12,13 +13,177 @@
 <div class="row mt-5">
   <div class="col-md-12">
     <div class="row">
-      {% for image in images %}
-        <div class="col-md-4 mb-4">
-          <img src="{% static 'predicted_images/' %}{{ image }}" alt="Обработанное изображение" class="img-fluid">
-        </div>
-      {% endfor %}
+      <div class="col-md-4">
+        <select id="image-select">
+          {% for image in images %}
+            <option value="{% static 'predicted_images/' %}{{ image }}">{{ image }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-8" id="image-container">
+        <canvas id="image-canvas"></canvas>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-md-6">
+        <label for="damage-class">Класс повреждения:</label>
+        <select id="damage-class">
+          <option value="царапины">Царапины</option>
+          <option value="битые пиксели">Битые пиксели</option>
+          <option value="проблемы с клавишами">Проблемы с клавишами</option>
+          <option value="замок">Замок</option>
+          <option value="отсутствует шуруп">Отсутствует шуруп</option>
+          <option value="сколы">Сколы</option>
+          <option value="специфический">Специфический</option>
+        </select>
+      </div>
+      <div class="col-md-6 text-center">
+        <button id="submit-coordinates">Отправить координаты</button>
+      </div>
     </div>
   </div>
 </div>
+
+<script>
+  var csrftoken = '{{ csrf_token }}';
+  const imageSelect = document.getElementById('image-select');
+  const imageContainer = document.getElementById('image-container');
+  const imageCanvas = document.getElementById('image-canvas');
+  const ctx = imageCanvas.getContext('2d');
+  const submitButton = document.getElementById('submit-coordinates');
+  const damageClassSelect = document.getElementById('damage-class');
+
+  let selectedImage = null;
+  let selectedImageWidth = 0;
+  let selectedImageHeight = 0;
+  let point1 = null;
+  let point2 = null;
+
+  const handleImageChange = () => {
+    selectedImage = new Image();
+    selectedImage.src = imageSelect.value;
+
+    selectedImage.onload = () => {
+      // Очистка canvas
+      ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+
+      // Установка размера canvas под размер изображения
+      imageCanvas.width = selectedImage.width * 2; // Увеличение в 2 раза
+      imageCanvas.height = selectedImage.height * 2; // Увеличение в 2 раза
+
+      // Рисование изображения на canvas
+      ctx.drawImage(selectedImage, 0, 0, imageCanvas.width, imageCanvas.height);
+
+      // Обновление размеров изображения
+      selectedImageWidth = selectedImage.width;
+      selectedImageHeight = selectedImage.height;
+    }
+  };
+
+  const handleCanvasClick = (event) => {
+    const rect = imageCanvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const imageX = x / (imageCanvas.width / selectedImageWidth);
+    const imageY = y / (imageCanvas.height / selectedImageHeight);
+
+    // Сохранение изображения
+    ctx.save();
+
+    if (point1 === null) {
+      point1 = { x: imageX, y: imageY };
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+    } else if (point2 === null) {
+      point2 = { x: imageX, y: imageY };
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'blue';
+      ctx.fill();
+
+      // Рисование прямоугольника
+      const minX = Math.min(point1.x, point2.x);
+      const minY = Math.min(point1.y, point2.y);
+      const width = Math.abs(point1.x - point2.x);
+      const height = Math.abs(point1.y - point2.y);
+      ctx.strokeStyle = 'green';
+      ctx.strokeRect(
+        minX * (imageCanvas.width / selectedImageWidth),
+        minY * (imageCanvas.height / selectedImageHeight),
+        width * (imageCanvas.width / selectedImageWidth),
+        height * (imageCanvas.height / selectedImageHeight)
+      );
+    } else {
+      ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+      imageCanvas.width = selectedImage.width * 2; // Увеличение в 2 раза
+      imageCanvas.height = selectedImage.height * 2; // Увеличение в 2 раза
+      point1 = null;
+      point2 = null;
+      point1 = { x: imageX, y: imageY };
+      ctx.drawImage(selectedImage, 0, 0, imageCanvas.width, imageCanvas.height);
+
+      // Обновление размеров изображения
+      selectedImageWidth = selectedImage.width;
+      selectedImageHeight = selectedImage.height;
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+
+      // Рисование изображения на canvas
+    }
+
+    // Восстановление изображения
+    ctx.restore();
+  };
+
+  const handleSubmitCoordinates = () => {
+    if (point1 && point2) {
+      // Получение текущего изображения
+      const currentImage = imageSelect.value;
+
+      // Получение выбранного класса повреждения
+      const damageClass = damageClassSelect.value;
+
+      // Отправка данных на сервер
+      fetch('/process_coordinates/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,
+        },
+        body: JSON.stringify({
+          image: currentImage,
+          point1: point1,
+          point2: point2,
+          damage_class: damageClass, // Добавлен параметр damage_class
+        }),
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Ошибка при отправке координат.');
+        }
+      })
+      .then(data => {
+        // Обработка ответа от сервера
+        console.log('Ответ от сервера:', data);
+      })
+      .catch(error => {
+        console.error('Ошибка:', error);
+      });
+    } else {
+      alert('Пожалуйста, поставьте две точки на изображении.');
+    }
+  };
+
+  imageSelect.addEventListener('change', handleImageChange);
+  imageCanvas.addEventListener('click', handleCanvasClick);
+  submitButton.addEventListener('click', handleSubmitCoordinates);
+</script>
 
 {% endblock %}
