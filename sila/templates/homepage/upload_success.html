@@ -11,10 +11,15 @@
 
 <div class="row mt-5">
   <div class="col-md-12">
-    {% for image in images %}
-      <img src="{% static 'predicted_images/' %}{{ image }}" alt="Обработанное изображение" class="img-fluid" style="max-width: 500px; margin: 20px auto;">
-    {% endfor %}
+    <div class="row">
+      {% for image in images %}
+        <div class="col-md-4 mb-4">
+          <img src="{% static 'predicted_images/' %}{{ image }}" alt="Обработанное изображение" class="img-fluid">
+        </div>
+      {% endfor %}
+    </div>
   </div>
 </div>
 
 {% endblock %}
+
