@@ -29,6 +29,14 @@
     </div>
   </div>
 
+  <div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+      <p>В данный момент в базе данных: <strong>{{ num_rows }}</strong> записей.</p>
+      <button class="btn btn-success" onclick="location.href='{% url 'homepage:learn' %}';">Дообучить модель</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const imageUpload = document.getElementById('imageUpload');
   const imagePreview = document.getElementById('imagePreview');

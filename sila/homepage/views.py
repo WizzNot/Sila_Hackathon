@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 import pandas as pd
@@ -22,7 +22,10 @@ def delete_image(filename):
 
 def homepage(request):
     template = "homepage/home.html"
-    return render(request, template_name=template)
+    df = pd.read_csv(os.path.join(settings.BASE_DIR, "src", "data.csv"))
+    num_rows = len(df)
+    context = {"num_rows": num_rows}
+    return render(request, template_name=template, context=context)
 
 
 def upload(request):
@@ -64,13 +67,14 @@ def process_coordinates(request):
     df = pd.DataFrame(columns=['main_class','filename','x_left_bottom','y_left_bottom','length','width'])
     df.loc[len(df)] = [d[damageclass.lower()],filename,dx,dy,length,width]
     old_df = pd.read_csv(os.path.join(settings.BASE_DIR, "src", "data.csv"))
-    combined = pd.concat([old_df, df], ignore_index=True)
+    combined = pd.concat([old_df, df], ignore_index=True).drop_duplicates()
     combined.to_csv(os.path.join(settings.BASE_DIR, "src", "data.csv"), index=False)
     
 
     return render(request, 'base.html', {'images': []}) # Возвращаем шаблон (или другой ответ)
   else:
     return render(request, 'base.html', {'images': []}) # Возвращаем шаблон (или другой ответ)
+
 
 
 # MODEL_FITTING
@@ -212,3 +216,4 @@ def learn(request):
 
     dff = pd.DataFrame(columns=['main_class', 'filename', 'x_left_bottom', 'y_left_bottom', 'length', 'width'])
     dff.to_csv(os.path.join(settings.BASE_DIR, "src", "data.csv"), index=False)
+    return redirect('homepage:home')
