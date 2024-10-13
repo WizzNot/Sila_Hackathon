@@ -14,6 +14,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() in ("true", "1")
 EPOCH_NUM = int(os.getenv("EPOCH_NUM", "10"))
 
 ALLOWED_HOSTS = [i for i in os.getenv("ALLOWED_HOSTS", "127.0.0.1").split(",")]
+CSRF_TRUSTED_ORIGINS = ["https://" + i for i in os.getenv("ALLOWED_HOSTS", "127.0.0.1").split(",")]
 
 
 INSTALLED_APPS = [
