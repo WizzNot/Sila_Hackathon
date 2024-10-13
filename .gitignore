@@ -131,3 +131,4 @@ __pypackages__/
 sila/learn_images
 sila/src/predicted_images
 sila/src/data.csv
+runs/
