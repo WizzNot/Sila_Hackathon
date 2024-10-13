@@ -87,6 +87,8 @@ def learn(request):
     from django.conf import settings
 
     df = pd.read_csv(os.path.join(settings.BASE_DIR, "src", "data.csv"), delimiter=",")
+    if len(df) < 10:
+        return render(request, 'homepage/home.html', {'error_message': 'Должно быть не менее 10 записей в базе данных', 'num_rows': len(df)})
 
     input_folder = os.path.join(settings.BASE_DIR, 'learn_images')
     output_folder = os.path.join(settings.BASE_DIR, 'src', 'dataset', 'train')
@@ -206,7 +208,8 @@ def learn(request):
     print(f"Осталось {num_train} изображений в папке train.")
 
     data_path = os.path.join(settings.BASE_DIR, "src", "data.yaml")
-    settings.MODEL.train(data=data_path, epochs=5)
+    epoch_num = settings.EPOCH_NUM
+    settings.MODEL.train(data=data_path, epochs=epoch_num)
     settings.MODEL.save(os.path.join(settings.BASE_DIR, "model", "best.pt"))
 
     for filename in os.listdir(input_folder):
