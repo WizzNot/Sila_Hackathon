@@ -38,8 +38,6 @@ def upload(request):
             fs.save("images/" + unique_filename, image)
             image_names.append(unique_filename)
         results = model.predict(os.path.join(settings.BASE_DIR, "images"))
-        for i in image_names:
-            delete_image(i)
         for i, r in enumerate(results):
             name = image_names[i]
             print(name)
