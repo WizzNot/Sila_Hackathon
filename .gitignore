@@ -125,3 +125,9 @@ __pypackages__/
 
 # macOS
 .DS_Store
+
+# images
+
+sila/learn_images
+sila/src/predicted_images
+sila/src/data.csv
